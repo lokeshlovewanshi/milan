@@ -1,64 +1,51 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, HelperText } from 'react-native-paper';
-import { Formik } from 'formik';
-import * as Yup from 'yup';
+import { Formik } from "formik";
+import React from "react";
+import { StyleSheet, View } from "react-native";
+import { Button } from "react-native-paper";
+import * as Yup from "yup";
+import TextFieldBox from "../../common/TextFieldBox";
+import { storeToken } from "../../Authentication/secureStorage";
+import Auth from "../../Authentication/authentication";
+
+const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikxva2VzaCBMb3Zld2Fuc2hpIiwiZW1haWxJZCI6Imxva2VzaGxvdmV3YW5zaGk5OEBnbWFpbC5jb20iLCJpYXQiOjE1MTYyMzkwMjJ9.C2OQtGOmg-1CCcgbc5UxChvKcuuAi5AZAk9iM6OELEU";
+
+const LoginSchema = Yup.object().shape({
+  identifier: Yup.string().required("Email or Username is required"),
+  password: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .required("Password is required"),
+});
 
 const LoginScreen = () => {
-  const LoginSchema = Yup.object().shape({
-    identifier: Yup.string().required('Email or Username is required'),
-    password: Yup.string()
-      .min(6, 'Password must be at least 6 characters')
-      .required('Password is required'),
-  });
+  const { login } = Auth();
+
+  const handleLogin = (values, action) => {
+    console.log(values);
+    login(token);
+  };
 
   return (
     <View style={styles.container}>
       <Formik
-        initialValues={{ identifier: '', password: '' }}
+        initialValues={{ identifier: "", password: "" }}
         validationSchema={LoginSchema}
-        onSubmit={(values) => {
-          console.log(values);
-          // Handle login here (e.g., call an API to log the user in)
-        }}
+        onSubmit={handleLogin}
       >
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-        }) => (
+        {({ handleSubmit }) => (
           <View style={styles.form}>
-            <TextInput
+            <TextFieldBox
+              param="identifier"
               label="Email or Username"
-              value={values.identifier}
-              onChangeText={handleChange('identifier')}
-              onBlur={handleBlur('identifier')}
-              style={styles.input}
-              mode="outlined"
               autoCapitalize="none"
               autoComplete="off"
             />
-            <HelperText type="error" visible={touched.identifier && errors.identifier}>
-              {errors.identifier}
-            </HelperText>
-
-            <TextInput
-              label="Password"
-              value={values.password}
-              onChangeText={handleChange('password')}
-              onBlur={handleBlur('password')}
-              style={styles.input}
-              mode="outlined"
-              secureTextEntry
-            />
-            <HelperText type="error" visible={touched.password && errors.password}>
-              {errors.password}
-            </HelperText>
-
-            <Button mode="contained" onPress={handleSubmit} style={styles.submitButton}>
+            <TextFieldBox param="password" label="Password" secureTextEntry />
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              style={styles.submitButton}
+            >
               Login
             </Button>
           </View>
@@ -70,18 +57,14 @@ const LoginScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    marginTop: 200,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   form: {
-    flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
-  input: {
-    marginBottom: 10,
-  },
+  input: {},
   submitButton: {
     marginTop: 20,
   },

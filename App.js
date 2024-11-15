@@ -1,20 +1,40 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useContext } from "react";
+import { StyleSheet } from "react-native";
+import { DefaultTheme, PaperProvider } from "react-native-paper";
+import LoginNavigation from "./app/navigations/LoginNavigation";
+import Context, { UserContext } from "./app/store/Context";
+import { View } from "react-native";
+import SafeAreaScreen from "./app/common/SafeAreaScreen";
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+import { APP_ENV_NAME } from "@env";
+import Constants from "expo-constants";
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+const theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: "tomato",
+    secondary: "yellow",
   },
-});
+};
+
+const MilanApp = () => {
+  const { user, setUser } = useContext(UserContext);
+
+  return <>{/* <LoginNavigation /> */}</>;
+};
+const App = () => {
+  console.log("Environment:", Constants.expoConfig.extra);
+  console.log("API URL:", APP_ENV_NAME);
+  return (
+    <PaperProvider theme={theme}>
+      <Context>
+        {/* <StatusBar style="auto" /> */}
+        <MilanApp />
+      </Context>
+    </PaperProvider>
+  );
+};
+
+export default App;
+const styles = StyleSheet.create({});

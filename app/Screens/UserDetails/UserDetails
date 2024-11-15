@@ -1,0 +1,9 @@
+const UserDetails = () => {
+  return (
+    <View>
+      <Text>user detail screen</Text>
+    </View>
+  );
+};
+
+export default UserDetails;
