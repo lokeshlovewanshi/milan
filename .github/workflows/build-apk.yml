@@ -1,19 +1,19 @@
-name: Build APK
+name: Pull Request Build
 
 on:
-  push:
-    branches:
-      - main # Adjust to your target branch
   pull_request:
     branches:
-      - main
+      - dev
+      - staging
+      - production
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
 
     env:
-      APP_ENV: development # Set your default environment; can be overridden per job
+      NODE_ENV: ${{ github.event.pull_request.base.ref }}
+      APP_ENV: ${{ github.event.pull_request.base.ref }}
 
     steps:
       - name: Checkout code
@@ -28,24 +28,48 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18" # Use the Node.js version required by your project
+          node-version: "18"
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Set up environment variables
+      - name: Debug Java Environment
         run: |
-          echo "APP_ENV=${{ env.APP_ENV }}" >> $GITHUB_ENV
+          java -version
+          echo $JAVA_HOME
+          java -XshowSettings:properties -version
 
-      - name: Run assembleRelease
+      - name: Update Certificates
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+
+      - name: Cache Gradle Wrapper
+        uses: actions/cache@v3
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-wrapper
+
+      - name: Set Java TLS Protocols
+        run: |
+          echo "JAVA_TOOL_OPTIONS='-Dhttps.protocols=TLSv1.2,TLSv1.3'" >> $GITHUB_ENV
+
+      - name: Test Network Connectivity
+        run: |
+          curl -I https://services.gradle.org
+
+      - name: Grant execute permissions to gradlew
+        run: chmod +x ./android/gradlew
+
+      - name: Build APK
         run: |
           cd android
           ./gradlew assembleRelease
         env:
-          APP_ENV: ${{ env.APP_ENV }}
+          APP_ENV: ${{ github.event.pull_request.base.ref }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
-          name: app-release.apk
+          name: apk-${{ github.event.pull_request.base.ref }}.apk
           path: android/app/build/outputs/apk/release/app-release.apk
