@@ -6,14 +6,17 @@ on:
       - dev
       - staging
       - production
+    paths:
+      - "**/*"
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     env:
       NODE_ENV: ${{ github.event.pull_request.base.ref }}
       APP_ENV: ${{ github.event.pull_request.base.ref }}
+      JAVA_TOOL_OPTIONS: "-Dhttps.protocols=TLSv1.2,TLSv1.3"
 
     steps:
       - name: Checkout code
@@ -25,51 +28,41 @@ jobs:
           java-version: "17"
           distribution: "zulu"
 
-      - name: Install Node.js
+      - name: Install Node.js (LTS 18.x)
         uses: actions/setup-node@v3
         with:
           node-version: "18"
 
-      - name: Debug Java Environment
+      - name: Install Dependencies
         run: |
-          java -version
-          echo $JAVA_HOME
-          java -XshowSettings:properties -version
+          npm install # or yarn install, depending on your project
 
-      - name: Update Certificates
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates
-          sudo update-ca-certificates
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 33
+          ndk-version: 25.1.8937393
+          cmake-version: 3.22.1
+          build-tools: 33.0.2
 
       - name: Cache Gradle Wrapper
         uses: actions/cache@v3
         with:
-          path: ~/.gradle/wrapper
+          path: C:\Users\RunnerUser\.gradle
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-wrapper
 
-      - name: Set Java TLS Protocols
+      - name: Clean Gradle
         run: |
-          echo "JAVA_TOOL_OPTIONS='-Dhttps.protocols=TLSv1.2,TLSv1.3'" >> $GITHUB_ENV
-
-      - name: Test Network Connectivity
-        run: |
-          curl -I https://services.gradle.org
-
-      - name: Grant execute permissions to gradlew
-        run: chmod +x ./android/gradlew
+          cd android
+          ./gradlew clean
 
       - name: Build APK
         run: |
           cd android
-          ./gradlew assembleRelease
-        env:
-          APP_ENV: ${{ github.event.pull_request.base.ref }}
+          ./gradlew assembleRelease --info --stacktrace --debug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: apk-${{ github.event.pull_request.base.ref }}.apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+      - name: Check Java Version
+        run: |
+          java -version

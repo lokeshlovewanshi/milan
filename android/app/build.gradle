@@ -103,7 +103,8 @@ def enableProguardInReleaseBuilds =true
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
+    compileSdkVersion 33
+    ndkVersion "21.3.6528147" // Make sure this matches your current configuration
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
     namespace 'com.lovewanshi.Milaan'
@@ -182,6 +183,8 @@ android {
 }
 
 dependencies {
+    classpath "com.android.tools.build:gradle:8.2.0"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
