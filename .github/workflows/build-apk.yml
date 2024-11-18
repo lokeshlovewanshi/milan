@@ -1,19 +1,74 @@
-name: Build APK
+# name: Build APK
+
+# on:
+#   push:
+#     branches:
+#       - main # Adjust to your target branch
+#   pull_request:
+#     branches:
+#       - main
+
+# jobs:
+#   build-apk:
+#     runs-on: ubuntu-latest
+
+#     env:
+#       APP_ENV: development # Set your default environment; can be overridden per job
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Set up JDK
+#         uses: actions/setup-java@v3
+#         with:
+#           java-version: "17"
+#           distribution: "zulu"
+
+#       - name: Install Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: "18" # Use the Node.js version required by your project
+
+#       - name: Install dependencies
+#         run: npm install
+
+#       - name: Set up environment variables
+#         run: |
+#           echo "APP_ENV=${{ env.APP_ENV }}" >> $GITHUB_ENV
+
+#       - name: Run assembleRelease
+#         run: |
+#           cd android
+#           ./gradlew assembleRelease
+#         env:
+#           APP_ENV: ${{ env.APP_ENV }}
+
+#       - name: Upload APK
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: app-release.apk
+#           path: android/app/build/outputs/apk/release/app-release.apk
+
+name: Pull Request Build
 
 on:
-  push:
-    branches:
-      - main # Adjust to your target branch
   pull_request:
     branches:
-      - main
+      - dev
+      - staging
+      - production
+    paths:
+      - "**/*"
 
 jobs:
-  build-apk:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: windows-latest
 
     env:
-      APP_ENV: development # Set your default environment; can be overridden per job
+      NODE_ENV: ${{ github.event.pull_request.base.ref }}
+      APP_ENV: ${{ github.event.pull_request.base.ref }}
+      JAVA_TOOL_OPTIONS: "-Dhttps.protocols=TLSv1.2,TLSv1.3"
 
     steps:
       - name: Checkout code
@@ -25,27 +80,41 @@ jobs:
           java-version: "17"
           distribution: "zulu"
 
-      - name: Install Node.js
+      - name: Install Node.js (LTS 18.x)
         uses: actions/setup-node@v3
         with:
-          node-version: "18" # Use the Node.js version required by your project
+          node-version: "18"
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Set up environment variables
+      - name: Install Dependencies
         run: |
-          echo "APP_ENV=${{ env.APP_ENV }}" >> $GITHUB_ENV
+          npm install # or yarn install, depending on your project
 
-      - name: Run assembleRelease
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 33
+          ndk-version: 25.1.8937393
+          cmake-version: 3.22.1
+          build-tools: 33.0.2
+
+      - name: Cache Gradle Wrapper
+        uses: actions/cache@v3
+        with:
+          path: C:\Users\RunnerUser\.gradle
+          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-wrapper
+
+      - name: Clean Gradle
         run: |
           cd android
-          ./gradlew assembleRelease
-        env:
-          APP_ENV: ${{ env.APP_ENV }}
+          ./gradlew clean
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-release.apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --info --stacktrace --debug
+
+      - name: Check Java Version
+        run: |
+          java -version
