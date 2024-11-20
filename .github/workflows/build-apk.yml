@@ -1,51 +1,40 @@
-name: Build APK
-
+name: Build and deploy iOS app
 on:
-  push:
-    branches:
-      - main # Adjust to your target branch
   pull_request:
     branches:
-      - main
-
+      - dev
+      - staging
+      - production
+    paths:
+      - "**/*"
 jobs:
-  build-apk:
-    runs-on: ubuntu-latest
-
-    env:
-      APP_ENV: development # Set your default environment; can be overridden per job
-
+  build:
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: "17"
-          distribution: "zulu"
-
-      - name: Install Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18" # Use the Node.js version required by your project
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Set up environment variables
+          node-version: "18"
+      - name: Install Homebrew and dependencies
         run: |
-          echo "APP_ENV=${{ env.APP_ENV }}" >> $GITHUB_ENV
-
-      - name: Run assembleRelease
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          brew install cocoapods
+      - name: Install project dependencies
+        run: npm ci
+      - name: Install Expo CLI
+        run: npm install -g expo-cli
+      - name: Generate iOS project
+        run: npx expo prebuild --clean
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+      - name: Build iOS app
+        working-directory: ios
         run: |
-          cd android
-          ./gradlew assembleRelease
-        env:
-          APP_ENV: ${{ env.APP_ENV }}
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-release.apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          xcodebuild -workspace MyApp.xcworkspace \
+          -scheme MyApp \
+          -configuration Release \
+          -archivePath $PWD/build/MyApp.xcarchive \
+          archive
