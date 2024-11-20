@@ -1,5 +1,4 @@
 name: Build and deploy iOS app
-
 on:
   pull_request:
     branches:
@@ -10,36 +9,32 @@ on:
       - "**/*"
 jobs:
   build:
-    runs-on: macos-latest # Use macOS for iOS build
-
+    runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v3
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: "18" # Ensure using Node version >= 18
-
-      - name: Install dependencies
-        run: npm install # Install dependencies
-
+          node-version: "18"
+      - name: Install Homebrew and dependencies
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          brew install cocoapods
+      - name: Install project dependencies
+        run: npm ci
       - name: Install Expo CLI
-        run: npm install -g expo-cli # Install Expo CLI globally
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli # Install EAS CLI globally (for future use)
-
-      - name: Generate iOS project with expo prebuild
-        run: npx expo prebuild # This generates the ios/ directory and related files
-
-      - name: Reset CocoaPods repo (if needed)
+        run: npm install -g expo-cli
+      - name: Generate iOS project
+        run: npx expo prebuild --clean
+      - name: Install CocoaPods dependencies
+        working-directory: ios
+        run: pod install
+      - name: Build iOS app
+        working-directory: ios
         run: |
-          pod repo remove master || true  # This removes any corrupted CocoaPods repo
-          pod setup  # Reinitialize the CocoaPods specs repo
-          cd ios && pod install  # Install dependencies
-
-      - name: Build iOS app with Xcode
-        run: |
-          xcodebuild -workspace ios/MyApp.xcworkspace -scheme MyApp -configuration Release -archivePath $PWD/build/MyApp.xcarchive archive
-          xcodebuild -exportArchive -archivePath $PWD/build/MyApp.xcarchive -exportOptionsPlist exportOptions.plist -exportPath $PWD/build
+          xcodebuild -workspace MyApp.xcworkspace \
+          -scheme MyApp \
+          -configuration Release \
+          -archivePath $PWD/build/MyApp.xcarchive \
+          archive

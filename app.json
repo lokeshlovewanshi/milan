@@ -13,9 +13,18 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+
     "ios": {
       "bundleIdentifier": "com.yourcompany.myapp",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1.0.0",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access for scanning QR codes",
+        "NSLocationWhenInUseUsageDescription": "This app needs access to location when open"
+      },
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+      }
     },
     "android": {
       "package": "com.lovewanshi.Milaan",
